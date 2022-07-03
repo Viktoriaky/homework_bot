@@ -40,7 +40,7 @@ handler = StreamHandler(stream='sys.stdout')
 
 
 def send_message(bot, message):
-    """Oтправляет сообщение в Telegram чат"""
+    """Oтправляет сообщение в Telegram чат."""
     try:
         bot.send_message(
             message.chat.id,
@@ -52,7 +52,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """Делает запрос к эндпоинту"""
+    """Делает запрос к эндпоинту."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
 
@@ -79,7 +79,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """Проверяет ответ API на корректность"""
+    """Проверяет ответ API на корректность."""
     if not isinstance(response, dict):
         raise TypeError('Неверный тип данных')
 
@@ -94,7 +94,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Извлекаем статус работы"""
+    """Извлекаем статус работы."""
     if 'homework_name' not in homework:
         raise KeyError('Ключ "homework_name" отсутствует')
     homework_name = homework['homework_name']
@@ -111,7 +111,7 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """Проверка токенов на доступность"""
+    """Проверка токенов на доступность."""
     if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]) is False:
         logging.critical('Отсутствуют обязательные переменные окружения')
         return False
