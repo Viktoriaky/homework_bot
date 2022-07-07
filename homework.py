@@ -154,7 +154,8 @@ def main():
                 current_report['messages'] = 'Нет новых статусов'
 
             if current_report != prev_report:
-                message = f'{current_report["name"]},{current_report["messages"]}'
+                message = f'{current_report["name"]},'
+                f'{current_report["messages"]}'
                 send_message(bot, message)
                 prev_report = current_report.copy()
             else:
