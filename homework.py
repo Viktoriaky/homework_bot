@@ -10,8 +10,6 @@ import custom_exceptions
 
 from http import HTTPStatus
 
-from telegram import TelegramError
-
 from dotenv import load_dotenv
 
 
@@ -39,12 +37,13 @@ def send_message(bot, message):
     """Oтправляет сообщение в Telegram чат."""
     try:
         bot.send_message(
-            message.chat.id,
-            messsage='Привет! Ты только посмотри, что ревьюер написал!',
+            chat_id=TELEGRAM_CHAT_ID,
+            text=message,
         )
         logging.info('Начался процесс отправки сообщения')
-    except TelegramError as error:
-        raise TelegramError(f'Сообщение не отправлено {error}')
+    except custom_exceptions.TelegramError as error:
+        raise custom_exceptions.TelegramError(
+            f'Сообщение не отправлено {error}')
     else:
         logging.info('Сообщение отправлено')
 
@@ -59,21 +58,25 @@ def get_api_answer(current_timestamp):
         'params': params,
     }
     try:
-        logging.info('Отправляем запрос к API')
+        logging.info(
+            'Отправляем запрос: url={url},'
+            'headers={headers},'
+            'params={params}'.format(**homework_dict)
+        )
         response = requests.get(**homework_dict)
 
         if response.status_code != HTTPStatus.OK:
 
-            raise custom_exceptions.ConnectionError(
+            raise custom_exceptions.WrongResponseFromAPI(
                 'Ошибка доступа: url = {url},'
                 'headers = {headers},'
                 'params = {params}'.format(**homework_dict)
             )
         return response.json()
 
-    except custom_exceptions.WrongResponseFromAPI:
-        raise custom_exceptions.WrongResponseFromAPI(
-            'Нет ответа API, '
+    except Exception:
+        raise custom_exceptions.ConnectionError(
+            'Нет ответа API,'
             f'ошибка: {response.status_code}'
             f'причина: {response.reason}'
             f'текст: {response.text}'
@@ -124,17 +127,17 @@ def main():
     """Основная логика работы бота."""
     if not check_tokens():
         logging.critical('Токен(ы) не найдены')
-        sys.exit([1])
+        sys.exit('Токен(ы) не найдены')
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
     current_report = {
         'name': '',
-        ' messages/output': '',
+        'messages': '',
     }
     prev_report = {
         'name': '',
-        'messages/output': '',
+        'messages': '',
     }
 
     while True:
@@ -146,27 +149,26 @@ def main():
             if homework:
                 homework_new = homework[0]
                 current_report['name'] = homework_new.get('homework_name')
-                message = parse_status(homework_new)
+                current_report['messages'] = homework_new.get('status')
             else:
-                current_report['messages/output'] = 'Нет новых статусов'
+                current_report['messages'] = 'Нет новых статусов'
 
             if current_report != prev_report:
-                message = f'{current_report["name"]},'
-                f'{current_report["messages/output"]}'
+                message = f'{current_report["name"]},{current_report["messages"]}'
                 send_message(bot, message)
                 prev_report = current_report.copy()
             else:
                 logging.info('Новых статусов нет')
 
-        except custom_exceptions.NotForSend:
-            logging.error()
+        except custom_exceptions.NotForSend as error:
+            logging.error({error})
         except Exception as error:
             logging.exception(f'Что-то пошло совсем не так: {error}')
-            current_report['messages/output'] = 'Что-то не так: {error}'
+            current_report['messages'] = 'Что-то не так: {error}'
             current_report != prev_report
             send_message(
                 bot,
-                f'{current_report["messages/output"]}'
+                f'{current_report["messages"]}'
             )
             prev_report = current_report.copy()
 
@@ -178,9 +180,9 @@ if __name__ == '__main__':
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     logging.basicConfig(
         level=logging.INFO,
-        filename=os.path.join(BASE_DIR, 'logs/bot.log'),
         format='%(asctime)s, %(levelname)s, %(message)s, %(name)s, %(lineno)d',
-        handlers=[logging.StreamHandler(stream='sys.stdout')],
-        encoding='UTF-8'
+        handlers=[logging.StreamHandler(stream='sys.stdout'),
+                  logging.FileHandler(
+                  os.path.join(BASE_DIR, 'bot.log'), encoding='UTF-8')],
     )
     main()

@@ -1,7 +1,5 @@
 """Кастомные исключения."""
 
-import logging
-
 
 class NotForSend(Exception):
     """Основной класс для кастомных исключений."""
@@ -9,22 +7,25 @@ class NotForSend(Exception):
     pass
 
 
-class ConnectionError(NotForSend):
+class ConnectionError(Exception):
     """Выдает ошибку при запросе к основному API."""
 
     pass
-    logging.error('Ошибка при запросе к основному API')
 
 
-class WrongResponseFromAPI(NotForSend):
+class WrongResponseFromAPI(Exception):
     """Выбрасываем кастомное исключение НеВерныйОтветОтАПИ."""
 
     pass
-    logging.error('Ответа от API нет')
 
 
 class EmptyResponseFromAPI(NotForSend):
     """Проверяем что домашки или даты нет в респонсе."""
 
     pass
-    logging.error('Работы отсутствуют')
+
+
+class TelegramError(NotForSend):
+    """Проверка отправки сообщений в телеграм."""
+
+    pass
