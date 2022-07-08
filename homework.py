@@ -151,12 +151,13 @@ def main():
                 homework_new = homework[0]
                 current_report['name'] = homework_new.get('homework_name')
                 current_report['messages'] = parse_status(homework_new)
+                message = (f'{current_report["name"]},'
+                           f'{current_report["messages"]}')
             else:
                 current_report['messages'] = 'Нет новых статусов'
+                message = current_report['messages']
 
             if current_report != prev_report:
-                message = f'{current_report["name"]},'
-                f'{current_report["messages"]}'
                 send_message(bot, message)
                 prev_report = current_report.copy()
             else:
@@ -168,10 +169,7 @@ def main():
             logging.exception(f'Что-то пошло совсем не так: {error}')
             current_report['messages'] = f'Что-то не так: {error}'
             current_report != prev_report
-            send_message(
-                bot,
-                f'{current_report["messages"]}'
-            )
+            send_message(bot, f'{current_report["messages"]}')
             prev_report = current_report.copy()
 
         finally:
@@ -182,7 +180,7 @@ if __name__ == '__main__':
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     logging.basicConfig(
         level=logging.INFO,
-        handlers=[logging.StreamHandler(stream='sys.stdout'),
+        handlers=[logging.StreamHandler(sys.stdout),
                   logging.FileHandler(
                   os.path.join(BASE_DIR, 'bot.log'), encoding='UTF-8')],
         format='%(asctime)s, %(levelname)s, %(message)s, %(name)s, %(lineno)d',
