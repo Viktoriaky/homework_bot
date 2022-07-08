@@ -36,12 +36,13 @@ VERDICTS = {
 def send_message(bot, message):
     """Oтправляет сообщение в Telegram чат."""
     try:
+        logging.info('{message}')
         bot.send_message(
             chat_id=TELEGRAM_CHAT_ID,
             text=message,
         )
-        logging.info('Начался процесс отправки сообщения')
-    except custom_exceptions.TelegramError as error:
+
+    except telegram.error.TelegramError as error:
         raise custom_exceptions.TelegramError(
             f'Сообщение не отправлено {error}')
     else:
@@ -68,18 +69,18 @@ def get_api_answer(current_timestamp):
         if response.status_code != HTTPStatus.OK:
 
             raise custom_exceptions.WrongResponseFromAPI(
-                'Ошибка доступа: url = {url},'
-                'headers = {headers},'
-                'params = {params}'.format(**homework_dict)
+                f'ошибка: {response.status_code}'
+                f'причина: {response.reason}'
+                f'текст: {response.text}'
             )
         return response.json()
 
-    except Exception:
+    except Exception as error:
         raise custom_exceptions.ConnectionError(
-            'Нет ответа API,'
-            f'ошибка: {response.status_code}'
-            f'причина: {response.reason}'
-            f'текст: {response.text}'
+            f'Нет ответа API {error},'
+            'Ошибка доступа: url = {url},'
+            'headers = {headers},'
+            'params = {params}'.format(**homework_dict)
         )
 
 
@@ -89,7 +90,7 @@ def check_response(response):
     if not isinstance(response, dict):
         raise TypeError('Неверный тип данных')
     if 'homeworks' not in response or 'current_date' not in response:
-        raise custom_exceptions.EmptyResponseFromAPI()
+        raise custom_exceptions.EmptyResponseFromAPI('Ключи отсутсвуют')
 
     homework = response.get('homeworks')
 
@@ -149,7 +150,7 @@ def main():
             if homework:
                 homework_new = homework[0]
                 current_report['name'] = homework_new.get('homework_name')
-                current_report['messages'] = homework_new.get('status')
+                current_report['messages'] = parse_status(homework_new)
             else:
                 current_report['messages'] = 'Нет новых статусов'
 
@@ -162,10 +163,10 @@ def main():
                 logging.info('Новых статусов нет')
 
         except custom_exceptions.NotForSend as error:
-            logging.error({error})
+            logging.error(f'Бот занемог и слег: {error}')
         except Exception as error:
             logging.exception(f'Что-то пошло совсем не так: {error}')
-            current_report['messages'] = 'Что-то не так: {error}'
+            current_report['messages'] = f'Что-то не так: {error}'
             current_report != prev_report
             send_message(
                 bot,
@@ -181,9 +182,9 @@ if __name__ == '__main__':
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s, %(levelname)s, %(message)s, %(name)s, %(lineno)d',
         handlers=[logging.StreamHandler(stream='sys.stdout'),
                   logging.FileHandler(
                   os.path.join(BASE_DIR, 'bot.log'), encoding='UTF-8')],
+        format='%(asctime)s, %(levelname)s, %(message)s, %(name)s, %(lineno)d',
     )
     main()
